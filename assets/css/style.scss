@@ -1,0 +1,154 @@
+[v-cloak]{
+  display: none;
+}
+
+
+.noto-sans-bold {
+  font-family: "NotoSans Medium", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: bold;
+  font-style: normal;
+  font-variation-settings: "wdth" 100;
+}
+.noto-sans {
+    font-family: "NotoSans Medium", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: normal;
+    font-style: normal;
+    font-variation-settings: "wdth" 100;
+  }
+.noto-sans-thin {
+    font-family: "NotoSans Medium", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: thin;
+    font-style: normal;
+    font-variation-settings: "wdth" 100;
+  }
+.img-item {
+  img {
+    width: 100%;
+    aspect-ratio: 1/1;
+  }
+  color: #abb3bf99;
+}
+
+.layer {
+  .layer-item {
+    &:last-child {
+      button .up {
+        display: none;
+      }
+    }
+
+    &:first-child {
+      button .down {
+        display: none;
+      }
+    }
+  }
+}
+
+.card {
+  width: 330px;
+  height: 80px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  padding: 10px 15px;
+  background-color: #ffffff;
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 15px;
+  overflow: hidden;
+
+  .wave {
+    position: absolute;
+    transform: rotate(90deg);
+    left: -31px;
+    top: 32px;
+    width: 80px;
+  }
+
+  .icon-container {
+    width: 35px;
+    height: 35px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    margin-left: 8px;
+  }
+
+  .icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  .message-text-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    flex-grow: 1;
+  }
+
+  .message-text,
+  .sub-text {
+    margin: 0;
+    cursor: default;
+  }
+
+  .message-text {
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .sub-text {
+    font-size: 14px;
+    color: #555;
+  }
+
+}
+
+
+// Error Message Style
+.error {
+  .wave {
+    fill: #fc0c0c3a;
+  }
+
+  .icon-container {
+    background-color: #fc0c0c48;
+  }
+
+  .icon {
+    color: #d10d0d;
+  }
+
+  .message-text {
+    color: #d10d0d;
+  }
+}
+
+// Success Message Style
+.success {
+  .wave {
+    fill: #04e4003a;
+  }
+
+  .icon-container {
+    background-color: #04e40048;
+  }
+
+  .icon {
+    color: #269b24;
+  }
+
+  .message-text {
+    color: #269b24;
+  }
+}
+

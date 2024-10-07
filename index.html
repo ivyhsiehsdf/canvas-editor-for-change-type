@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bootstrap demo</title>
+  <!-- Option 1: Include in HTML -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./assets/css/fonts.css" />
+  <link rel="stylesheet" href="./assets/css/style.css" />
+  <link rel="stylesheet" type="text/css" href="./plugins/toastify/toastify.css" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app" class="relative" v-cloak>
+    <div
+      class="edit-container w-screen h-screen max-w-full max-h-full flex flex-col md:flex-row border-2 border-[#BEBFBF] rounded-lg">
+      <v-toolbar class="order-1 md:order-none noto-sans" :canvas="canvas" v-on:add-canvas-obj="addObjInCanvasAdd"
+        v-on:get-image-url="getCanvasImageUrl">
+        <template v-slot:layer>
+          <v-layer :item-list="layerList" :canvas="canvas" v-on:update-layer-list="updateLayerList"></v-layer>
+        </template>
+        <template v-slot:ai-type>
+          <v-ai-type :canvas="canvas" v-on:form-loading="formLoading" v-on:form-loaded="formLoaded"></v-ai-type>
+        </template>
+      </v-toolbar>
+
+      <div class="edit-canvas flex-1 flex flex-col overflow-hidden">
+        <v-element-toolbar v-if="canvas" :canvas="canvas" :active-objects="activeObjects"
+          v-on:update-layer-list="updateLayerList" v-on:add-canvas-obj="addObjInCanvasAdd"
+          v-on:update-active-object="updateActiveObject" v-on:load-from-json="loadFromJson"></v-element-toolbar>
+        <div id="edit-canvas" class="flex-1 bg-white" ref="editCanvas">
+          <canvas ref="canvas" id="canvas"></canvas>
+        </div>
+      </div>
+    </div>
+    <div v-if="isLoading" class="absolute w-full h-screen top-0 left-0 flex justify-center items-center">
+      <div class="w-auto gap-x-2 flex justify-center items-center bg-white p-4 aspect-square rounded-lg">
+        <div class="w-5 bg-[#d991c2] animate-pulse h-5 rounded-full animate-bounce"></div>
+        <div class="w-5 animate-pulse h-5 bg-[#9869b8] rounded-full animate-bounce"></div>
+        <div class="w-5 h-5 animate-pulse bg-[#6756cc] rounded-full animate-bounce"></div>
+      </div>
+    </div>
+  </div>
+  <div>
+  </div>
+
+
+  <script src="./plugins/fabric.min.js"></script>
+  <script src="./plugins/toastify/toastify.js"></script>
+  <script src="./plugins/lodash.js/lodash.min.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+  <script type="module" src="./assets/js/index.js"></script>
+
+  <script id="layer-template" type="text/template">
+    <div ref="layerList" id="layerList" class="flex flex-col gap-2 overflow-y-auto max-h-full">
+      <div class="flex justify-between text-gray-700 border-[#BEBFBF] border-2 rounded-md px-2.5 py-2"
+       v-for="(item,index) in itemList"
+        :key="index"
+        :class="{'bg-[#CCECFF]':item.isSelect}"
+        v-on:click="selectLayer(item.id)"
+        draggable="true"
+        v-on:dragstart="dragStart(index,$event)"
+        v-on:dragover.prevent="dragOver(index)"
+        v-on:drop="drop(index)"
+          v-on:touchstart="touchStart(index,$event)"
+          v-on:touchmove.prevent="touchMove(index,$event)"
+          v-on:touchend="touchEnd($event)"
+       >
+        <div class="flex items-center gap-2">
+          <button class="p-0 bg-transparent border-none hover:cursor-grab active:cursor-grabbing"
+          draggable="true"
+         >
+            <svg class="size-5 fill-gray-700" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+              <path
+                d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-400q-33 0-56.5-23.5T280-480q0-33 23.5-56.5T360-560q33 0 56.5 23.5T440-480q0 33-23.5 56.5T360-400Zm240 0q-33 0-56.5-23.5T520-480q0-33 23.5-56.5T600-560q33 0 56.5 23.5T680-480q0 33-23.5 56.5T600-400ZM360-640q-33 0-56.5-23.5T280-720q0-33 23.5-56.5T360-800q33 0 56.5 23.5T440-720q0 33-23.5 56.5T360-640Zm240 0q-33 0-56.5-23.5T520-720q0-33 23.5-56.5T600-800q33 0 56.5 23.5T680-720q0 33-23.5 56.5T600-640Z" />
+            </svg>
+          </button>
+          <span class="text-sm text-[#BEBFBF]">{{changeType(item.type)}}</span>
+          <span>{{item.name}}</span>
+        </div>
+        <div class="flex gap-2 items-center">
+          <button class="p-0 bg-transparent border-none" v-on:click="toggleVisibility(item)">
+            <div v-show="item.visible">
+              <svg class="size-5 fill-[#5f6b7c]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                <path fill-rule="evenodd"
+                  d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
+                  clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div v-show="!item.visible">
+              <svg class="size-5 fill-[#5f6b7c]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                  d="M3.28 2.22a.75.75 0 0 0-1.06 1.06l14.5 14.5a.75.75 0 1 0 1.06-1.06l-1.745-1.745a10.029 10.029 0 0 0 3.3-4.38 1.651 1.651 0 0 0 0-1.185A10.004 10.004 0 0 0 9.999 3a9.956 9.956 0 0 0-4.744 1.194L3.28 2.22ZM7.752 6.69l1.092 1.092a2.5 2.5 0 0 1 3.374 3.373l1.091 1.092a4 4 0 0 0-5.557-5.557Z"
+                  clip-rule="evenodd" />
+                <path
+                  d="m10.748 13.93 2.523 2.523a9.987 9.987 0 0 1-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 0 1 0-1.186A10.007 10.007 0 0 1 2.839 6.02L6.07 9.252a4 4 0 0 0 4.678 4.678Z" />
+              </svg>
+            </div>
+          </button>
+          <button class="p-0 bg-transparent border-none" v-on:click="toggleLock(item)">
+            <div v-show="item.hasControls">
+              <svg class="size-5 fill-[#5f6b7c]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                <path
+                  d="M352 144c0-44.2 35.8-80 80-80s80 35.8 80 80l0 48c0 17.7 14.3 32 32 32s32-14.3 32-32l0-48C576 64.5 511.5 0 432 0S288 64.5 288 144l0 48L64 192c-35.3 0-64 28.7-64 64L0 448c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-192c0-35.3-28.7-64-64-64l-32 0 0-48z" />
+              </svg>
+            </div>
+            <div v-show="!item.hasControls">
+              <svg class="size-5 fill-[#5f6b7c]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                <path
+                  d="M144 144l0 48 160 0 0-48c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192l0-48C80 64.5 144.5 0 224 0s144 64.5 144 144l0 48 16 0c35.3 0 64 28.7 64 64l0 192c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 256c0-35.3 28.7-64 64-64l16 0z" />
+              </svg>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </script>
+
+  <script id="toolbar-template" type="text/template">
+      <div class="flex flex-col md:flex-row">
+        <div id="toolbar"
+          class="w-full md:w-[75px] flex order-1 border-t-2 border-[#BEBFBF] md:order-none md:flex-col md:items-center  md:border-t-0 md:border-r-2 overflow-x-auto md:overflow-hidden">
+          <button id="download-btn"
+            class="w-full min-w-[73.4px] w-[73.4px] px-1 py-2 md:py-4 duration-300 hover:bg-cyan-100 "
+            v-on:click="saveCanvas">
+            <div class=" w-[50%] aspect-square mx-auto flex justify-center items-center">
+              <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+                <path
+                  d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z" />
+              </svg>
+            </div>
+            <span class="block noto-sans-bold text-xs ">Download</span>
+
+          </button>
+          <button id="circle-btn"
+            class="w-full  min-w-[73.4px] w-[73.4px] px-1 py-2 md:py-4 duration-300 hover:bg-cyan-100 "
+            v-on:click="addCircleInCanvas">
+            <div class="w-[50%] aspect-square mx-auto flex justify-center items-center">
+              <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512z" />
+              </svg>
+            </div>
+            <span class="block noto-sans-bold text-xs ">Circle</span>
+
+          </button>
+          <button id="rect-btn" class="w-full  min-w-[73.4px] w-[73.4px] px-1 py-2 md:py-4 duration-300 hover:bg-cyan-100 "
+            v-on:click="addRectInCanvas">
+            <div class="w-[50%] aspect-square mx-auto flex justify-center items-center">
+              <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                <path
+                  d="M0 96C0 60.7 28.7 32 64 32H384c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96z" />
+              </svg>
+            </div>
+            <span class="block noto-sans-bold text-xs ">Rect</span>
+          </button>
+          <button id="triangle-btn"
+            class="w-full  min-w-[73.4px] w-[73.4px] px-1 py-2 md:py-4 duration-300 hover:bg-cyan-100 "
+            v-on:click="addTriangleInCanvas">
+            <div class="w-[50%] aspect-square mx-auto flex justify-center items-center">
+              <svg class="w-full h-full rotate-[-90deg]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                <path
+                  d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z" />
+              </svg>
+            </div>
+            <span class="block noto-sans-bold text-xs ">Triangle</span>
+          </button>
+          <button id="pic-btn" class="w-full  min-w-[73.4px] w-[73.4px] px-1 py-2 md:py-4 duration-300 hover:bg-cyan-100 "
+            v-on:click="openOption(type.image)">
+            <div class="w-[50%] aspect-square mx-auto flex justify-center items-center">
+              <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path
+                  d="M448 80c8.8 0 16 7.2 16 16l0 319.8-5-6.5-136-176c-4.5-5.9-11.6-9.3-19-9.3s-14.4 3.4-19 9.3L202 340.7l-30.5-42.7C167 291.7 159.8 288 152 288s-15 3.7-19.5 10.1l-80 112L48 416.3l0-.3L48 96c0-8.8 7.2-16 16-16l384 0zM64 32C28.7 32 0 60.7 0 96L0 416c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-320c0-35.3-28.7-64-64-64L64 32zm80 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z" />
+              </svg>
+            </div>
+            <span class="block noto-sans-bold text-xs ">Image</span>
+          </button>
+          <button id="text-btn" class="w-full  min-w-[73.4px] w-[73.4px] px-1 py-2 md:py-4 duration-300 hover:bg-cyan-100 "
+            v-on:click="addTextInCanvas">
+            <div class="w-[50%] aspect-square mx-auto flex justify-center items-center">
+              <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+                <path d="M420-160v-520H200v-120h560v120H540v520H420Z" />
+              </svg>
+            </div>
+            <span class="block noto-sans-bold text-xs ">Text</span>
+          </button>
+          <button id="layer-btn" class="w-full  min-w-[73.4px] w-[73.4px] px-1 py-2 md:py-4 duration-300 hover:bg-cyan-100 "
+            v-on:click="openOption(type.layer)">
+            <div class="w-[50%] aspect-square mx-auto flex justify-center items-center">
+              <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+                <path
+                  d="M480-118 120-398l66-50 294 228 294-228 66 50-360 280Zm0-202L120-600l360-280 360 280-360 280Zm0-280Zm0 178 230-178-230-178-230 178 230 178Z" />
+              </svg>
+            </div>
+            <span class="block noto-sans-bold text-xs ">Layer</span>
+          </button>
+          <button id="AI-btn" class="w-full  min-w-[73.4px] w-[73.4px] px-1 py-2 md:py-4 duration-300 hover:bg-cyan-100"
+          v-on:click="openOption(type.aiType)">
+            <div class="w-[50%] aspect-square mx-auto flex justify-center items-center">
+              <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+                <path
+                  d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 32.5-156t88-127Q256-817 330-848.5T488-880q80 0 151 27.5t124.5 76q53.5 48.5 85 115T880-518q0 115-70 176.5T640-280h-74q-9 0-12.5 5t-3.5 11q0 12 15 34.5t15 51.5q0 50-27.5 74T480-80Zm0-400Zm-220 40q26 0 43-17t17-43q0-26-17-43t-43-17q-26 0-43 17t-17 43q0 26 17 43t43 17Zm120-160q26 0 43-17t17-43q0-26-17-43t-43-17q-26 0-43 17t-17 43q0 26 17 43t43 17Zm200 0q26 0 43-17t17-43q0-26-17-43t-43-17q-26 0-43 17t-17 43q0 26 17 43t43 17Zm120 160q26 0 43-17t17-43q0-26-17-43t-43-17q-26 0-43 17t-17 43q0 26 17 43t43 17ZM480-160q9 0 14.5-5t5.5-13q0-14-15-33t-15-57q0-42 29-67t71-25h70q66 0 113-38.5T800-518q0-121-92.5-201.5T488-800q-136 0-232 93t-96 227q0 133 93.5 226.5T480-160Z" />
+              </svg>
+            </div>
+            <span class="block noto-sans-bold text-xs ">AI Type</span>
+          </button>
+        </div>
+        <div v-if="isOpenOption"
+          class="absolute w-[99.5%] bottom-[68px] p-3 bg-white border-[#0000004d] z-10 md:bottom-auto md:relative md:w-[350px] border-t-2  md:border-t-0 md:border-r-2">
+          <div class="absolute hidden md:block -right-[14px] top-1/2 h-[96px] w-[15px]  fill-white cursor-pointer"
+            v-on:click="closeOption">
+            <svg width="15" height="96" viewBox="0 0 16 96" xmlns="http://www.w3.org/2000/svg">
+              <path class="fill stroke-[#0000004d]"
+                d="M 1 7 C 2 9 4 10 7.2 13.28 C 7.45 13.4625 7.6 13.6 7.7 13.8048 L 7.8 13.8 C 9.8 15.8 11.6 17.6 12.9 19.7 C 14 21.6 14.7 23.9 14.9 27 H 15 V 68 C 15 71.7 14.3 74.3 13 76.6 C 11.7 78.8 9.9 80.5 7.8 82.6344 L 7.79 82.6 C 7.6 82.8 7.4507 83 7.2729 83.2127 C 3.9102 86.5228 2 87 1 90">
+              </path>
+            </svg>
+            <div
+              class="absolute rotate-180 md:rotate-0 top-1/2 left-1/2 text-sm text-[#abb3bf99]  scale-y-[2] -translate-x-1/2 -translate-y-1/2">
+              <
+            </div>
+          </div>
+          <div class="h-[35vh] md:h-full overflow-y-auto" v-if="currentType ==type.layer">
+            <slot name="layer"></slot>
+          </div>
+          <div class="h-[35vh] md:h-full overflow-y-auto" v-if="currentType ==type.aiType">
+            <slot name="ai-type"></slot>
+          </div>
+          <div class="h-[35vh] flex flex-col md:h-full" v-if="currentType ==type.image">
+            <label for="upload-file"
+              class="block bg-[#E8E8E8] cursor-pointer w-full text-center text-nowrap border-2 border-[#BEBFBF] rounded-lg">
+              <input id="upload-file" class="hidden" multiple type="file" v-on:change="uploadImages" accept="image/*"/>
+              <span>Upload Image</span>
+            </label>
+            <div class="flex-1 flex mt-2 overflow-y-auto">
+              <div class="w-1/2">
+                <div class=" p-3"  v-for="item in evenImageList" >
+                  <div class="cursor-pointer overflow-hidden  shadow-xl rounded-lg"  v-on:click="addImagInCanvas(item)" >
+                    <img class="w-full  max-h-[200px] object-contain" :src="item.imgUrl" :alt="item.title">
+                  </div>
+                </div>
+              </div>
+              <div class="w-1/2">
+                <div class=" p-3"  v-for="item in oddImageList" >
+                  <div class="cursor-pointer overflow-hidden  shadow-xl rounded-lg"  v-on:click="addImagInCanvas(item)" >
+                    <img class="w-full  max-h-[200px] object-contain" :src="item.imgUrl" :alt="item.title">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </script>
+  <script id="element-toolbar-template" type="text/template">
+      <div class="h-[43px] flex justify-between bg-white px-4 py-1.5  border-b-2 border-[#BEBFBF]">
+          <div class="flex gap-2">
+              <button class="w-auto h-auto flex justify-center items-center  hover:duration-300"
+                        :class="{'pointer-events-none':!hasUndoStack,'cursor-not-allowed':!hasUndoStack,'fill-[#BEBFBF]':!hasUndoStack,'fill-[#5f6b7c]':hasUndoStack}"
+                        v-on:click="clickUndoBtn">
+                  <svg class="w-4 h-4 " xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 448 512">
+                      <path
+                          d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.2 288 416 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-306.7 0L214.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z" />
+                  </svg>
+              </button>
+              <button class="w-auto h-auto flex justify-center items-center  hover:duration-300"
+                        :class="{'pointer-events-none':!hasRedoStack,'cursor-not-allowed':!hasRedoStack,'fill-[#BEBFBF]':!hasRedoStack,'fill-[#5f6b7c]':hasRedoStack}"
+                        v-on:click="clickRedoBtn">
+                  <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 448 512">
+                      <path
+                          d="M438.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L338.8 224 32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l306.7 0L233.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160z" />
+                  </svg>
+              </button>
+              <label class="w-7 h-7 block" v-if="hasActiveObj && currentElFill" :style="{'background-color':currentElFill}" >
+                  <input class="w-full h-full" type="color" v-model="currentElFill" id="drawing-color" v-on:input="changeFill">
+              </label>
+          </div>
+          <div class="flex gap-2">
+              <button v-if="hasMoreActiveObj ||(hasActiveObj && isGroup)"
+                  class="w-auto h-auto flex justify-center items-center  hover:duration-300"
+                  :class="{' fill-[#BEBFBF]':!hasMoreActiveObj,'fill-[#5f6b7c]':hasMoreActiveObj}"
+                  v-on:click="groupObj.event">
+                  {{groupObj.text}}
+              </button>
+              <button
+                  class="w-auto h-auto flex justify-center items-center  hover:duration-300"
+                  :class="{'pointer-events-none':!hasActiveObj,'cursor-not-allowed':!hasActiveObj,'fill-[#BEBFBF]':!hasActiveObj,'fill-[#5f6b7c]':hasActiveObj}"
+                  v-on:click="copyPasteElement">
+                  <svg class="w-5 h-5 " xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                      <path
+                          d="M208 0L332.1 0c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9L448 336c0 26.5-21.5 48-48 48l-192 0c-26.5 0-48-21.5-48-48l0-288c0-26.5 21.5-48 48-48zM48 128l80 0 0 64-64 0 0 256 192 0 0-32 64 0 0 48c0 26.5-21.5 48-48 48L48 512c-26.5 0-48-21.5-48-48L0 176c0-26.5 21.5-48 48-48z" />
+                  </svg>
+              </button>
+              <button
+                  class="w-auto h-auto flex justify-center items-center  hover:duration-300"
+                  :class="{'pointer-events-none':!hasActiveObj,'cursor-not-allowed':!hasActiveObj,'fill-[#BEBFBF]':!hasActiveObj,'fill-[#5f6b7c]':hasActiveObj}"
+                  v-on:click="removeObj">
+                  <svg class="w-5 h-5 " xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                      <path
+                          d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0L284.2 0c12.1 0 23.2 6.8 28.6 17.7L320 32l96 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 96C14.3 96 0 81.7 0 64S14.3 32 32 32l96 0 7.2-14.3zM32 128l384 0 0 320c0 35.3-28.7 64-64 64L96 512c-35.3 0-64-28.7-64-64l0-320zm96 64c-8.8 0-16 7.2-16 16l0 224c0 8.8 7.2 16 16 16s16-7.2 16-16l0-224c0-8.8-7.2-16-16-16zm96 0c-8.8 0-16 7.2-16 16l0 224c0 8.8 7.2 16 16 16s16-7.2 16-16l0-224c0-8.8-7.2-16-16-16zm96 0c-8.8 0-16 7.2-16 16l0 224c0 8.8 7.2 16 16 16s16-7.2 16-16l0-224c0-8.8-7.2-16-16-16z" />
+                  </svg>
+              </button>
+          </div>
+      </div>
+    </script>
+  <script id="ai-type-template" type="text/template">
+      <div class="flex md:flex-col gap-4">
+        <div class="flex-1">
+          <div class="mb-2 last:mb-0">
+            <label for="width-input" class="block text-gray-800 font-semibold text-sm">Width</label>
+            <div class="mt-2">
+              <input id="width-input" type="text" name="width-input"
+              v-model="width"
+                class="block w-full rounded-md py-1.5 px-2 ring-1 ring-inset ring-gray-400 focus:text-gray-800" />
+            </div>
+          </div>
+          <div class="mb-2 last:mb-0">
+            <label for="height-input" class="block text-gray-800 font-semibold text-sm">Height
+            </label>
+            <div class="mt-2">
+              <input id="height-input" type="text" name="height-input"
+              v-model="height"
+                class="block w-full rounded-md py-1.5 px-2 ring-1 ring-inset ring-gray-400 focus:text-gray-800" />
+            </div>
+          </div>
+          <div class="mb-2 last:mb-0">
+            <label for="seed-input" class="block text-gray-800 font-semibold text-sm">Seed
+            </label>
+            <div class="mt-2">
+              <input id="seed-input" type="text" name="seed-input"
+              v-model="seed"
+                class="block w-full rounded-md py-1.5 px-2 ring-1 ring-inset ring-gray-400 focus:text-gray-800" />
+            </div>
+          </div>
+          <div class="mb-2 last:mb-0">
+            <label for="style-select" class="block text-gray-800 font-semibold text-sm">Style Prompt Select
+            </label>
+            <div class="mt-2">
+              <select id="style-select" name="style-select"
+              v-model="styleSelect"
+                class="block w-full rounded-md py-1.5 px-2 ring-1 ring-inset ring-gray-400 focus:text-gray-800">
+                <option v-for="(prompt,index) in stylePromptOptions" :value="prompt.label"  :hidden="index === 0">{{prompt.label}}</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-2 last:mb-0">
+            <label for="style-prompt-textarea" class="block text-gray-800 font-semibold text-sm">Style Prompt</label>
+            <div class="mt-2">
+              <textarea id="style-prompt-textarea" name="style-prompt-textarea"
+              :value="stylePrompt"
+                class="block w-full md:h-[250px] rounded-md py-1.5 px-2 ring-1 ring-inset ring-gray-400 focus:text-gray-800"></textarea>
+            </div>
+          </div>
+        </div>
+        <div  class="flex-1">
+          <div class="mb-2 last:mb-0">
+            <label for="prompt-id-input" class="block text-gray-800 font-semibold text-sm">Prompt Id</label>
+            <div class="mt-2">
+              <input id="prompt-id-input" type="text" name="prompt-id-input"
+              v-model="promptId"
+              readonly
+                class="block w-full rounded-md py-1.5 px-2 ring-1 ring-inset ring-gray-400 focus:text-gray-800 read-only:opacity-75 read-only:pointer-events-none" />
+            </div>
+          </div>
+          <div  v-if="canvasImageUrl" class="mb-2 last:mb-0">
+            <p class="block text-gray-800 font-semibold text-sm">Canvas Image</p>
+            <div class="w-full">
+              <img class="w-full align-top" :src="canvasImageUrl" alt=""/>
+            </div>
+          </div>
+          <div  v-if="changedImageUrl" class="mb-2 last:mb-0">
+            <p class="block text-gray-800 font-semibold text-sm">Style Change Image</p>
+            <div class="w-full">
+              <img class="w-full align-top" :src="changedImageUrl" alt=""/>
+            </div>
+          </div>
+          <div class="mb-2 last:mb-0">
+            <button
+              class="text-xl w-full h-12 rounded bg-emerald-500 text-white relative overflow-hidden group z-10 hover:text-white duration-1000 disabled:opacity-50 disabled:cursor-not-allowed"
+              v-on:click="changeStyle"
+              :disabled="isEnabledChangeStyleBtn || isClickChangeStyleBtn">
+              <span
+                class="absolute bg-emerald-600 w-[105%] h-36 rounded-full group-hover:scale-100 scale-0 -z-10 -left-2 -top-10 group-hover:duration-500 duration-700 origin-center transform transition-all"></span>
+              <span
+                class="absolute bg-emerald-800 w-[105%] h-36 -left-2 -top-10 rounded-full group-hover:scale-100 scale-0 -z-10 group-hover:duration-700 duration-500 origin-center transform transition-all"></span>
+             Get Prompt Id
+            </button>
+          </div>
+          <div class="mb-2 last:mb-0">
+            <button
+              class="text-xl w-full h-12 rounded bg-emerald-500 text-white relative overflow-hidden group z-10 hover:text-white duration-1000 disabled:opacity-50 disabled:cursor-not-allowed"
+              v-on:click="getPromptResult"
+              :disabled="!getPromptResultState">
+              <span
+                class="absolute bg-emerald-600 w-[105%] h-36 rounded-full group-hover:scale-100 scale-0 -z-10 -left-2 -top-10 group-hover:duration-500 duration-700 origin-center transform transition-all"></span>
+              <span
+                class="absolute bg-emerald-800 w-[105%] h-36 -left-2 -top-10 rounded-full group-hover:scale-100 scale-0 -z-10 group-hover:duration-700 duration-500 origin-center transform transition-all"></span>
+                Get Prompt Id Result
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </script>
+</body>
+
+</html>

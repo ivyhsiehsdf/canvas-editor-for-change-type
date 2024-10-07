@@ -1,0 +1,125 @@
+[v-cloak] {
+  display: none;
+}
+
+.noto-sans-bold {
+  font-family: "NotoSans Medium", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: bold;
+  font-style: normal;
+  font-variation-settings: "wdth" 100;
+}
+
+.noto-sans {
+  font-family: "NotoSans Medium", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: normal;
+  font-style: normal;
+  font-variation-settings: "wdth" 100;
+}
+
+.noto-sans-thin {
+  font-family: "NotoSans Medium", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: thin;
+  font-style: normal;
+  font-variation-settings: "wdth" 100;
+}
+
+.img-item {
+  color: rgba(171, 179, 191, 0.6);
+}
+.img-item img {
+  width: 100%;
+  aspect-ratio: 1/1;
+}
+
+.layer .layer-item:last-child button .up {
+  display: none;
+}
+.layer .layer-item:first-child button .down {
+  display: none;
+}
+
+.card {
+  width: 330px;
+  height: 80px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  padding: 10px 15px;
+  background-color: #ffffff;
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 15px;
+  overflow: hidden;
+}
+.card .wave {
+  position: absolute;
+  transform: rotate(90deg);
+  left: -31px;
+  top: 32px;
+  width: 80px;
+}
+.card .icon-container {
+  width: 35px;
+  height: 35px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  margin-left: 8px;
+}
+.card .icon {
+  width: 17px;
+  height: 17px;
+}
+.card .message-text-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  flex-grow: 1;
+}
+.card .message-text,
+.card .sub-text {
+  margin: 0;
+  cursor: default;
+}
+.card .message-text {
+  font-size: 17px;
+  font-weight: 700;
+}
+.card .sub-text {
+  font-size: 14px;
+  color: #555;
+}
+
+.error .wave {
+  fill: rgba(252, 12, 12, 0.2274509804);
+}
+.error .icon-container {
+  background-color: rgba(252, 12, 12, 0.2823529412);
+}
+.error .icon {
+  color: #d10d0d;
+}
+.error .message-text {
+  color: #d10d0d;
+}
+
+.success .wave {
+  fill: rgba(4, 228, 0, 0.2274509804);
+}
+.success .icon-container {
+  background-color: rgba(4, 228, 0, 0.2823529412);
+}
+.success .icon {
+  color: #269b24;
+}
+.success .message-text {
+  color: #269b24;
+}/*# sourceMappingURL=style.css.map */
